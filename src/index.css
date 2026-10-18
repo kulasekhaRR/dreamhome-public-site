@@ -1,0 +1,60 @@
+@import 'tailwindcss';
+
+@theme {
+    --font-sans: 'Manrope', ui-sans-serif, system-ui, sans-serif;
+    --font-serif: 'DM Serif Display', ui-serif, Georgia, serif;
+
+    /* Palette reference: Housing.com's brand identity — deep violet/purple
+       as the primary, warm gold as a contrasting accent. */
+    --color-brand-primary: #6d28d9;
+    --color-brand-primary-dark: #4c1d95;
+    --color-brand-accent: #ffc72c;
+    --color-brand-accent-light: #ffde82;
+    --color-brand-cream: #f6f3fc;
+    --color-brand-ink: #262626;
+}
+
+html {
+    scroll-behavior: smooth;
+}
+
+body {
+    font-family: var(--font-sans);
+    color: var(--color-brand-ink);
+    background-color: #ffffff;
+}
+
+.font-display {
+    font-family: var(--font-serif);
+}
+
+.no-scrollbar::-webkit-scrollbar {
+    display: none;
+}
+.no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+}
+
+/* Leaflet marker cluster brand styling */
+.dh-cluster-icon {
+    background: var(--color-brand-primary);
+    color: #fff;
+    border-radius: 9999px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 13px;
+    border: 3px solid rgba(255, 199, 44, 0.7);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+}
+
+.dh-marker-icon {
+    background: var(--color-brand-primary);
+    width: 16px;
+    height: 16px;
+    border-radius: 9999px;
+    border: 2px solid #fff;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
+}
