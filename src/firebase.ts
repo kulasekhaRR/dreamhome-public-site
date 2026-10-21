@@ -10,7 +10,13 @@ const firebaseConfig = {
     appId: '1:1086324151008:web:b125b4e1d0741f62027685',
     storageBucket: 'dreamhomes-9bfa3.firebasestorage.app',
     apiKey: 'AIzaSyCMgpIMVd_2aKBx9fTp4D6_E1icSkxvRws',
-    authDomain: 'dreamhomes-9bfa3.firebaseapp.com',
+    // Deliberately NOT the default *.firebaseapp.com — that domain has no
+    // Hosting content deployed (we only deployed the custom "dreamhouse"
+    // site), so Firebase's own auth-helper endpoints 404 there
+    // (confirmed: /__/firebase/init.json). Pointing authDomain at our own
+    // Hosting site, which does serve those paths, is Firebase's documented
+    // fix for this with a custom Hosting site/domain.
+    authDomain: 'dreamhouse-vizag.web.app',
     messagingSenderId: '1086324151008',
     measurementId: 'G-TPLL7ZXW22',
 }
