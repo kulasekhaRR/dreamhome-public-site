@@ -5,6 +5,7 @@ import type { Property } from '../types/property'
 import PropertyMap from '../components/PropertyMap'
 import { toTitleCase } from '../utils/format'
 import { assetPath } from '../utils/assetPath'
+import { propertyToPin } from '../utils/mapPins'
 
 const PropertyDetail = () => {
     const { id } = useParams<{ id: string }>()
@@ -86,9 +87,9 @@ const PropertyDetail = () => {
                 <h2 className='font-display text-xl text-gray-900 mb-4'>Location</h2>
                 <div className='rounded-2xl overflow-hidden border border-gray-200 h-96'>
                     <PropertyMap
-                        properties={[property]}
+                        pins={[propertyToPin(property)]}
                         center={[property.mandal_lat, property.mandal_lon]}
-                        zoom={13}
+                        zoom={12}
                     />
                 </div>
                 <p className='text-xs text-gray-400 mt-2'>

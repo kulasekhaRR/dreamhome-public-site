@@ -19,7 +19,7 @@ const Footer = () => {
                     <h3 className='text-sm font-semibold text-white/90 mb-3'>Explore</h3>
                     <ul className='space-y-2 text-sm text-white/70'>
                         <li><Link to='/properties' className='hover:text-white'>All Properties</Link></li>
-                        <li><Link to='/map' className='hover:text-white'>Map View</Link></li>
+                        
                         <li><Link to='/about' className='hover:text-white'>About Us</Link></li>
                     </ul>
                 </div>
@@ -45,7 +45,11 @@ const Footer = () => {
                 <div className='mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-4 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-white/50'>
                     <span>© {year} DreamHome. All rights reserved.</span>
                     <span>
-                        Project data from AP RERA (rera.ap.gov.in). Location imagery ©{' '}
+                        Project data from AP RERA (rera.ap.gov.in). Map tiles ©{' '}
+                        <a href='https://www.esri.com' target='_blank' rel='noreferrer' className='underline hover:text-white'>
+                            Esri
+                        </a>
+                        . Location imagery ©{' '}
                         <a href='https://www.openstreetmap.org/copyright' target='_blank' rel='noreferrer' className='underline hover:text-white'>
                             OpenStreetMap
                         </a>{' '}

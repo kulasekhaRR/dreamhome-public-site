@@ -1,173 +1,221 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { fetchProperties } from '../services/propertiesService'
-import type { PropertiesDataset } from '../types/property'
+import { fetchListings } from '../services/listingsService'
+import type { PropertiesDataset, Property } from '../types/property'
+import type { ListingsDataset } from '../types/listing'
+import type { MapPin } from '../types/mapPin'
+import { propertyToPin, listingToPin } from '../utils/mapPins'
 import PropertyCard from '../components/PropertyCard'
+import ListingCard from '../components/ListingCard'
+import PropertyMap from '../components/PropertyMap'
 import SimpleMultiSelect from '../components/SimpleMultiSelect'
 import { toTitleCase } from '../utils/format'
 
-const PAGE_SIZE = 24
+const RERA_PAGE_SIZE = 24
+const SEETHAMMADHARA_CENTER: [number, number] = [17.745, 83.3062]
 
 const Properties = () => {
-    const [searchParams, setSearchParams] = useSearchParams()
-    const [data, setData] = useState<PropertiesDataset | null>(null)
+    const [searchParams] = useSearchParams()
+
+    const [listingsData, setListingsData] = useState<ListingsDataset | null>(null)
+    const [reraData, setReraData] = useState<PropertiesDataset | null>(null)
     const [isLoading, setIsLoading] = useState(true)
+
     const [query, setQuery] = useState(searchParams.get('q') || '')
+    const [showReraSection, setShowReraSection] = useState(false)
     const [selectedTypes, setSelectedTypes] = useState<string[]>([])
     const [selectedStatuses, setSelectedStatuses] = useState<string[]>([])
     const [selectedMandals, setSelectedMandals] = useState<string[]>([])
-    const [sortBy, setSortBy] = useState<'distance' | 'name'>('distance')
-    const [page, setPage] = useState(1)
+    const [reraPage, setReraPage] = useState(1)
+
+    const [selectedPin, setSelectedPin] = useState<MapPin | null>(null)
 
     useEffect(() => {
-        fetchProperties()
-            .then(setData)
+        Promise.all([fetchListings(), fetchProperties()])
+            .then(([listings, rera]) => {
+                setListingsData(listings)
+                setReraData(rera)
+            })
             .catch(console.error)
             .finally(() => setIsLoading(false))
     }, [])
 
+    const filteredListings = useMemo(() => {
+        if (!listingsData) return []
+        const q = query.trim().toLowerCase()
+        if (!q) return listingsData.listings
+        return listingsData.listings.filter(
+            (l) => l.project_name.toLowerCase().includes(q) || l.location.toLowerCase().includes(q),
+        )
+    }, [listingsData, query])
+
     const typeOptions = useMemo(
         () =>
-            Array.from(new Set(data?.projects.map((p) => p.project_type) ?? []))
+            Array.from(new Set(reraData?.projects.map((p) => p.project_type) ?? []))
                 .sort()
                 .map((v) => ({ label: v, value: v })),
-        [data],
+        [reraData],
     )
     const statusOptions = useMemo(
         () =>
-            Array.from(new Set(data?.projects.map((p) => p.status) ?? []))
+            Array.from(new Set(reraData?.projects.map((p) => p.status) ?? []))
                 .sort()
                 .map((v) => ({ label: v, value: v })),
-        [data],
+        [reraData],
     )
     const mandalOptions = useMemo(
         () =>
-            Array.from(new Set(data?.projects.map((p) => p.mandal) ?? []))
+            Array.from(new Set(reraData?.projects.map((p) => p.mandal) ?? []))
                 .sort()
                 .map((v) => ({ label: toTitleCase(v), value: v })),
-        [data],
+        [reraData],
     )
 
-    const filtered = useMemo(() => {
-        if (!data) return []
+    const filteredRera = useMemo((): Property[] => {
+        if (!reraData) return []
         const q = query.trim().toLowerCase()
-        let results = data.projects.filter((p) => {
+        return reraData.projects.filter((p) => {
             if (q && !p.project_name.toLowerCase().includes(q) && !p.place.toLowerCase().includes(q)) return false
             if (selectedTypes.length > 0 && !selectedTypes.includes(p.project_type)) return false
             if (selectedStatuses.length > 0 && !selectedStatuses.includes(p.status)) return false
             if (selectedMandals.length > 0 && !selectedMandals.includes(p.mandal)) return false
             return true
         })
-        results = [...results].sort((a, b) =>
-            sortBy === 'distance'
-                ? a.distance_km_from_target_mandal_level - b.distance_km_from_target_mandal_level
-                : a.project_name.localeCompare(b.project_name),
-        )
-        return results
-    }, [data, query, selectedTypes, selectedStatuses, selectedMandals, sortBy])
+    }, [reraData, query, selectedTypes, selectedStatuses, selectedMandals])
 
     useEffect(() => {
-        setPage(1)
+        setReraPage(1)
     }, [query, selectedTypes, selectedStatuses, selectedMandals])
 
-    useEffect(() => {
-        const params = new URLSearchParams()
-        if (query) params.set('q', query)
-        setSearchParams(params, { replace: true })
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [query])
+    const reraTotalPages = Math.max(1, Math.ceil(filteredRera.length / RERA_PAGE_SIZE))
+    const pagedRera = filteredRera.slice((reraPage - 1) * RERA_PAGE_SIZE, reraPage * RERA_PAGE_SIZE)
 
-    const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE))
-    const paged = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE)
-
-    const clearAll = () => {
-        setQuery('')
-        setSelectedTypes([])
-        setSelectedStatuses([])
-        setSelectedMandals([])
-    }
-    const hasFilters = Boolean(query || selectedTypes.length || selectedStatuses.length || selectedMandals.length)
+    // The map always shows every currently-visible listing pin, plus the
+    // RERA section's pins once it's expanded (kept collapsed by default —
+    // 2,048 projects would otherwise dominate both the map and the page).
+    const mapPins = useMemo((): MapPin[] => {
+        const pins = filteredListings.map(listingToPin)
+        if (showReraSection) pins.push(...filteredRera.map(propertyToPin))
+        return pins
+    }, [filteredListings, filteredRera, showReraSection])
 
     return (
-        <div className='mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-12'>
-            <div className='mb-8'>
-                <h1 className='font-display text-3xl text-gray-900'>All Properties</h1>
-                <p className='text-gray-500 mt-2'>
-                    {data ? `${filtered.length.toLocaleString()} of ${data.totalCount.toLocaleString()}` : '…'}{' '}
-                    RERA-registered projects across Visakhapatnam district
-                </p>
-            </div>
-
-            <div className='flex flex-wrap items-center gap-3 mb-8'>
-                <input
-                    value={query}
-                    onChange={(e) => setQuery(e.target.value)}
-                    placeholder='Search project or locality...'
-                    className='h-10 px-4 rounded-full border border-gray-300 text-sm w-full sm:w-72 focus:outline-none focus:ring-2 focus:ring-brand-primary'
+        <div className='flex flex-col lg:flex-row h-[calc(100vh-4rem)]'>
+            {/* Map */}
+            <div className='relative h-80 lg:h-full lg:w-1/2 xl:w-3/5 order-1 lg:order-none'>
+                <PropertyMap
+                    pins={mapPins}
+                    center={SEETHAMMADHARA_CENTER}
+                    zoom={11}
+                    onMarkerClick={setSelectedPin}
+                    selectedId={selectedPin?.id}
                 />
-                <SimpleMultiSelect label='Type' options={typeOptions} selected={selectedTypes} onChange={setSelectedTypes} />
-                <SimpleMultiSelect label='Status' options={statusOptions} selected={selectedStatuses} onChange={setSelectedStatuses} />
-                <SimpleMultiSelect label='Locality' options={mandalOptions} selected={selectedMandals} onChange={setSelectedMandals} />
 
-                <select
-                    value={sortBy}
-                    onChange={(e) => setSortBy(e.target.value as 'distance' | 'name')}
-                    className='h-10 px-4 rounded-full border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-brand-primary'
-                >
-                    <option value='distance'>Sort: Nearest first</option>
-                    <option value='name'>Sort: Name (A–Z)</option>
-                </select>
-
-                {hasFilters && (
-                    <button onClick={clearAll} className='text-sm font-medium text-red-600 hover:underline'>
-                        Clear filters
-                    </button>
+                {selectedPin && (
+                    <div className='absolute bottom-4 left-4 right-4 sm:right-auto sm:w-80 bg-white rounded-xl shadow-lg border border-gray-200 p-4 z-[1000]'>
+                        <div className='flex items-start justify-between gap-2'>
+                            <h3 className='font-semibold text-gray-900 text-sm'>{selectedPin.title}</h3>
+                            <button onClick={() => setSelectedPin(null)} className='text-gray-400 hover:text-gray-600'>
+                                ✕
+                            </button>
+                        </div>
+                        <p className='text-xs text-gray-500 mt-1'>{selectedPin.subtitle}</p>
+                        <a
+                            href={selectedPin.linkTo}
+                            className='inline-block mt-3 text-xs font-semibold text-brand-primary hover:underline'
+                        >
+                            View details →
+                        </a>
+                    </div>
                 )}
             </div>
 
-            {isLoading && (
-                <div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6'>
-                    {Array.from({ length: 9 }).map((_, i) => (
-                        <div key={i} className='h-56 rounded-2xl bg-gray-100 animate-pulse' />
-                    ))}
+            {/* Listings */}
+            <div className='flex-1 lg:w-1/2 xl:w-2/5 overflow-y-auto'>
+                <div className='p-4 border-b border-gray-200 sticky top-0 bg-white z-10'>
+                    <input
+                        value={query}
+                        onChange={(e) => setQuery(e.target.value)}
+                        placeholder='Search project or locality...'
+                        className='w-full h-10 px-4 rounded-full border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-brand-primary'
+                    />
                 </div>
-            )}
 
-            {!isLoading && filtered.length === 0 && (
-                <div className='text-center py-20 text-gray-500'>No properties match your filters.</div>
-            )}
-
-            {!isLoading && filtered.length > 0 && (
-                <>
-                    <div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6'>
-                        {paged.map((property) => (
-                            <PropertyCard key={property.rera_id} property={property} />
-                        ))}
+                <div className='p-4'>
+                    <div className='flex items-baseline justify-between mb-4'>
+                        <h1 className='font-display text-2xl text-gray-900'>Exclusive Listings</h1>
+                        <span className='text-xs text-gray-500'>{filteredListings.length} available</span>
                     </div>
 
-                    {totalPages > 1 && (
-                        <div className='flex items-center justify-center gap-2 mt-10'>
-                            <button
-                                disabled={page === 1}
-                                onClick={() => setPage((p) => Math.max(1, p - 1))}
-                                className='h-9 px-4 rounded-full border border-gray-300 text-sm disabled:opacity-40'
-                            >
-                                Previous
-                            </button>
-                            <span className='text-sm text-gray-500'>
-                                Page {page} of {totalPages}
-                            </span>
-                            <button
-                                disabled={page === totalPages}
-                                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-                                className='h-9 px-4 rounded-full border border-gray-300 text-sm disabled:opacity-40'
-                            >
-                                Next
-                            </button>
+                    {isLoading && (
+                        <div className='grid grid-cols-1 sm:grid-cols-2 gap-4 mb-10'>
+                            {Array.from({ length: 4 }).map((_, i) => (
+                                <div key={i} className='h-56 rounded-2xl bg-gray-100 animate-pulse' />
+                            ))}
                         </div>
                     )}
-                </>
-            )}
+
+                    {!isLoading && (
+                        <div className='grid grid-cols-1 sm:grid-cols-2 gap-4 mb-10'>
+                            {filteredListings.map((listing) => (
+                                <ListingCard key={listing.id} listing={listing} />
+                            ))}
+                            {filteredListings.length === 0 && (
+                                <p className='text-sm text-gray-400 col-span-2'>No exclusive listings match your search.</p>
+                            )}
+                        </div>
+                    )}
+
+                    <button
+                        onClick={() => setShowReraSection((v) => !v)}
+                        className='w-full flex items-center justify-between rounded-xl border border-gray-200 px-4 py-3 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors'
+                    >
+                        <span>
+                            {showReraSection ? 'Hide' : 'Show'} RERA-registered projects ({filteredRera.length.toLocaleString()})
+                        </span>
+                        <span className={`transition-transform ${showReraSection ? 'rotate-180' : ''}`}>▾</span>
+                    </button>
+
+                    {showReraSection && (
+                        <div className='mt-4'>
+                            <div className='flex flex-wrap items-center gap-2 mb-4'>
+                                <SimpleMultiSelect label='Type' options={typeOptions} selected={selectedTypes} onChange={setSelectedTypes} />
+                                <SimpleMultiSelect label='Status' options={statusOptions} selected={selectedStatuses} onChange={setSelectedStatuses} />
+                                <SimpleMultiSelect label='Locality' options={mandalOptions} selected={selectedMandals} onChange={setSelectedMandals} />
+                            </div>
+
+                            <div className='grid grid-cols-1 sm:grid-cols-2 gap-4'>
+                                {pagedRera.map((property) => (
+                                    <PropertyCard key={property.rera_id} property={property} />
+                                ))}
+                            </div>
+
+                            {reraTotalPages > 1 && (
+                                <div className='flex items-center justify-center gap-2 mt-6'>
+                                    <button
+                                        disabled={reraPage === 1}
+                                        onClick={() => setReraPage((p) => Math.max(1, p - 1))}
+                                        className='h-9 px-4 rounded-full border border-gray-300 text-sm disabled:opacity-40'
+                                    >
+                                        Previous
+                                    </button>
+                                    <span className='text-sm text-gray-500'>
+                                        Page {reraPage} of {reraTotalPages}
+                                    </span>
+                                    <button
+                                        disabled={reraPage === reraTotalPages}
+                                        onClick={() => setReraPage((p) => Math.min(reraTotalPages, p + 1))}
+                                        className='h-9 px-4 rounded-full border border-gray-300 text-sm disabled:opacity-40'
+                                    >
+                                        Next
+                                    </button>
+                                </div>
+                            )}
+                        </div>
+                    )}
+                </div>
+            </div>
         </div>
     )
 }

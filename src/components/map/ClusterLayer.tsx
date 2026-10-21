@@ -1,18 +1,18 @@
-import { useEffect, useRef } from 'react'
+import { useEffect } from 'react'
 import { useMap } from 'react-leaflet'
 import L from 'leaflet'
 import 'leaflet.markercluster'
-import type { Property } from '../../types/property'
+import type { MapPin } from '../../types/mapPin'
 
 interface ClusterLayerProps {
-    properties: Property[]
-    onMarkerClick?: (property: Property) => void
+    pins: MapPin[]
+    onMarkerClick?: (pin: MapPin) => void
     selectedId?: string | null
 }
 
-// Deterministic small jitter so projects sharing the same mandal centroid
-// (this dataset's distance granularity — see PropertiesDataset) don't render
-// as a single overlapping pin.
+// Deterministic small jitter so pins sharing an approximate/shared centroid
+// (mandal-level RERA data, or several listings in the same locality) don't
+// render as a single overlapping marker.
 function jitter(seed: string, magnitude = 0.01): [number, number] {
     let hash = 0
     for (let i = 0; i < seed.length; i++) hash = (hash << 5) - hash + seed.charCodeAt(i)
@@ -21,16 +21,22 @@ function jitter(seed: string, magnitude = 0.01): [number, number] {
     return [Math.cos(angle) * radius, Math.sin(angle) * radius]
 }
 
-const createDivIcon = (highlighted: boolean) =>
+const PIN_COLOR: Record<MapPin['kind'], string> = {
+    listing: '#ffc72c',
+    rera: '#6d28d9',
+}
+
+const createDivIcon = (kind: MapPin['kind'], highlighted: boolean) =>
     L.divIcon({
         className: '',
-        html: `<div class="dh-marker-icon" style="${highlighted ? 'background:#4c1d95;width:22px;height:22px;transform:translate(-3px,-3px);' : ''}"></div>`,
+        html: `<div class="dh-marker-icon" style="background:${PIN_COLOR[kind]};${
+            highlighted ? 'background:#4c1d95;width:22px;height:22px;transform:translate(-3px,-3px);' : ''
+        }"></div>`,
         iconSize: [16, 16],
     })
 
-const ClusterLayer = ({ properties, onMarkerClick, selectedId }: ClusterLayerProps) => {
+const ClusterLayer = ({ pins, onMarkerClick, selectedId }: ClusterLayerProps) => {
     const map = useMap()
-    const clusterGroupRef = useRef<L.MarkerClusterGroup | null>(null)
 
     useEffect(() => {
         const clusterGroup = L.markerClusterGroup({
@@ -43,32 +49,31 @@ const ClusterLayer = ({ properties, onMarkerClick, selectedId }: ClusterLayerPro
                 }),
         })
 
-        properties.forEach((property) => {
-            const [dLat, dLon] = jitter(property.rera_id)
-            const marker = L.marker([property.mandal_lat + dLat, property.mandal_lon + dLon], {
-                icon: createDivIcon(property.rera_id === selectedId),
+        pins.forEach((pin) => {
+            const [dLat, dLon] = jitter(pin.id)
+            const marker = L.marker([pin.lat + dLat, pin.lon + dLon], {
+                icon: createDivIcon(pin.kind, pin.id === selectedId),
             })
             marker.bindPopup(
                 `<div style="font-family: Manrope, sans-serif; min-width:180px;">
-                    <strong>${property.project_name}</strong><br/>
-                    <span style="color:#666;font-size:12px;">${property.place}</span><br/>
-                    <span style="font-size:12px;">${property.project_type} · ${property.status}</span>
+                    <strong>${pin.title}</strong><br/>
+                    <span style="color:#666;font-size:12px;">${pin.subtitle}</span><br/>
+                    <span style="font-size:12px;">${pin.badge}</span>
                 </div>`,
             )
             if (onMarkerClick) {
-                marker.on('click', () => onMarkerClick(property))
+                marker.on('click', () => onMarkerClick(pin))
             }
             clusterGroup.addLayer(marker)
         })
 
         map.addLayer(clusterGroup)
-        clusterGroupRef.current = clusterGroup
 
         return () => {
             map.removeLayer(clusterGroup)
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [map, properties, selectedId])
+    }, [map, pins, selectedId])
 
     return null
 }

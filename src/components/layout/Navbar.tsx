@@ -4,7 +4,6 @@ import Logo from '../Logo'
 
 const NAV_LINKS = [
     { to: '/properties', label: 'Properties' },
-    { to: '/map', label: 'Map' },
     { to: '/about', label: 'About' },
     { to: '/contact', label: 'Contact' },
 ]
