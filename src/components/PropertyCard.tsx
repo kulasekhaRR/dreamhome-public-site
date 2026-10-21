@@ -4,8 +4,8 @@ import { toTitleCase } from '../utils/format'
 import { assetPath } from '../utils/assetPath'
 
 const statusStyles: Record<string, string> = {
-    'New Project': 'bg-emerald-50 text-emerald-700',
-    'Under Development': 'bg-amber-50 text-amber-700',
+    'New Project': 'bg-brand-emerald-light text-brand-emerald',
+    'Under Development': 'bg-brand-accent-light text-brand-primary',
 }
 
 interface PropertyCardProps {

@@ -28,7 +28,7 @@ const Home = () => {
         <div>
             {/* Hero */}
             <section className='relative bg-brand-primary overflow-hidden'>
-                <div className='absolute inset-0 opacity-20 bg-[radial-gradient(circle_at_20%_20%,#ffc72c,transparent_40%),radial-gradient(circle_at_80%_60%,#ffc72c,transparent_35%)]' />
+                <div className='absolute inset-0 opacity-20 bg-[radial-gradient(circle_at_20%_20%,#c9a227,transparent_40%),radial-gradient(circle_at_80%_60%,#c9a227,transparent_35%)]' />
                 <div className='relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-24 sm:py-32 text-center'>
                     <p className='text-brand-accent-light text-sm font-semibold tracking-wide uppercase mb-4'>
                         Verified via Official AP RERA Registry

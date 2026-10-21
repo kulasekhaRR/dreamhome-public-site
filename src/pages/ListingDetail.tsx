@@ -68,7 +68,7 @@ const ListingDetail = () => {
                     )}
                     <span
                         className={`text-sm font-medium px-3 py-1.5 rounded-full ${
-                            listing.is_ready_to_move ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700'
+                            listing.is_ready_to_move ? 'bg-brand-emerald-light text-brand-emerald' : 'bg-brand-accent-light text-brand-primary'
                         }`}
                     >
                         {listing.is_ready_to_move ? 'Ready to move' : `Possession: ${listing.possession}`}

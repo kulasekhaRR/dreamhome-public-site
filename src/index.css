@@ -4,14 +4,19 @@
     --font-sans: 'Manrope', ui-sans-serif, system-ui, sans-serif;
     --font-serif: 'DM Serif Display', ui-serif, Georgia, serif;
 
-    /* Palette reference: Housing.com's brand identity — deep violet/purple
-       as the primary, warm gold as a contrasting accent. */
-    --color-brand-primary: #6d28d9;
-    --color-brand-primary-dark: #4c1d95;
-    --color-brand-accent: #ffc72c;
-    --color-brand-accent-light: #ffde82;
-    --color-brand-cream: #f6f3fc;
-    --color-brand-ink: #262626;
+    /* Premium real-estate palette: deep navy (trust, stability) + antique
+       gold (luxury accent) + a muted emerald as a third mixed-in color for
+       success/ready states — restrained richness rather than flat single-tone
+       branding, similar to how boutique/luxury property brands pair ink,
+       metallic and a deep jewel tone instead of one accent color. */
+    --color-brand-primary: #0f1f3d;
+    --color-brand-primary-dark: #091327;
+    --color-brand-accent: #c9a227;
+    --color-brand-accent-light: #e8d28a;
+    --color-brand-emerald: #0f6e5e;
+    --color-brand-emerald-light: #d7ece8;
+    --color-brand-cream: #faf6ef;
+    --color-brand-ink: #211d18;
 }
 
 html {
@@ -46,6 +51,6 @@ body {
     justify-content: center;
     font-weight: 700;
     font-size: 13px;
-    border: 3px solid rgba(255, 199, 44, 0.7);
+    border: 3px solid rgba(201, 162, 39, 0.7);
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
 }

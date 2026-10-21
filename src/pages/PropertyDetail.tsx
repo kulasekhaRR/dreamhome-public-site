@@ -62,7 +62,7 @@ const PropertyDetail = () => {
                 </div>
                 <span
                     className={`text-sm font-medium px-3 py-1.5 rounded-full ${
-                        property.status === 'Under Development' ? 'bg-amber-50 text-amber-700' : 'bg-emerald-50 text-emerald-700'
+                        property.status === 'Under Development' ? 'bg-brand-accent-light text-brand-primary' : 'bg-brand-emerald-light text-brand-emerald'
                     }`}
                 >
                     {property.status}

@@ -26,7 +26,7 @@ function jitter(seed: string, magnitude = 0.01): [number, number] {
 // Classic Google-Maps-style teardrop pin, not a plain circle.
 const PIN_COLOR: Record<MapPin['kind'], string> = {
     listing: '#ea4335', // Google Maps red
-    rera: '#6d28d9', // brand purple — keeps the bulk RERA directory visually distinct
+    rera: '#0f1f3d', // brand navy — keeps the bulk RERA directory visually distinct
 }
 
 type HighlightState = 'none' | 'hovered' | 'selected'
@@ -38,7 +38,7 @@ const pinSvg = (color: string, size: number) => `
 </svg>`
 
 const createDivIcon = (kind: MapPin['kind'], state: HighlightState) => {
-    const color = state === 'selected' ? '#4c1d95' : PIN_COLOR[kind]
+    const color = state === 'selected' ? '#c9a227' : PIN_COLOR[kind]
     const size = state === 'none' ? 28 : state === 'hovered' ? 32 : 36
     return L.divIcon({
         className: '',
