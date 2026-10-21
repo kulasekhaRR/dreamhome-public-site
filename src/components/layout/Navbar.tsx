@@ -1,6 +1,7 @@
 import { useState } from 'react'
-import { NavLink } from 'react-router-dom'
+import { NavLink, useNavigate } from 'react-router-dom'
 import Logo from '../Logo'
+import { useAuth } from '../../contexts/AuthContext'
 
 const NAV_LINKS = [
     { to: '/properties', label: 'Properties' },
@@ -13,6 +14,13 @@ const linkClasses = ({ isActive }: { isActive: boolean }) =>
 
 const Navbar = () => {
     const [open, setOpen] = useState(false)
+    const { user, signOut } = useAuth()
+    const navigate = useNavigate()
+
+    const handleSignOut = async () => {
+        await signOut()
+        navigate('/')
+    }
 
     return (
         <header className='sticky top-0 z-50 bg-white/95 backdrop-blur border-b border-gray-200'>
@@ -29,12 +37,26 @@ const Navbar = () => {
                     ))}
                 </nav>
 
-                <NavLink
-                    to='/properties'
-                    className='hidden md:inline-flex items-center rounded-full bg-brand-primary px-5 py-2 text-sm font-semibold text-white hover:bg-brand-primary-dark transition-colors'
-                >
-                    Browse Properties
-                </NavLink>
+                <div className='hidden md:flex items-center gap-4'>
+                    {user ? (
+                        <>
+                            <span className='text-sm text-gray-500 truncate max-w-[160px]'>{user.email}</span>
+                            <button onClick={handleSignOut} className='text-sm font-medium text-gray-600 hover:text-brand-primary'>
+                                Sign out
+                            </button>
+                        </>
+                    ) : (
+                        <NavLink to='/login' className='text-sm font-medium text-gray-600 hover:text-brand-primary'>
+                            Sign in
+                        </NavLink>
+                    )}
+                    <NavLink
+                        to='/properties'
+                        className='inline-flex items-center rounded-full bg-brand-primary px-5 py-2 text-sm font-semibold text-white hover:bg-brand-primary-dark transition-colors'
+                    >
+                        Browse Properties
+                    </NavLink>
+                </div>
 
                 <button
                     onClick={() => setOpen((v) => !v)}
@@ -54,6 +76,21 @@ const Navbar = () => {
                             {link.label}
                         </NavLink>
                     ))}
+                    {user ? (
+                        <button
+                            onClick={() => {
+                                setOpen(false)
+                                handleSignOut()
+                            }}
+                            className='text-left text-sm font-medium text-gray-600 hover:text-brand-primary'
+                        >
+                            Sign out ({user.email})
+                        </button>
+                    ) : (
+                        <NavLink to='/login' className={linkClasses} onClick={() => setOpen(false)}>
+                            Sign in
+                        </NavLink>
+                    )}
                 </nav>
             )}
         </header>

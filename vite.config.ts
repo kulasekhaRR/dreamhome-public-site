@@ -2,10 +2,12 @@ import tailwindcss from '@tailwindcss/vite'
 import react from '@vitejs/plugin-react'
 import { defineConfig } from 'vite'
 
-// GitHub Pages serves project sites under /<repo-name>/, not the domain
-// root, so the production build needs that prefix baked into asset URLs.
-// Local dev stays at '/' so `npm run dev` URLs aren't affected.
-export default defineConfig(({ command }) => ({
-    base: command === 'build' ? '/dreamhome-public-site/' : '/',
+// Firebase Hosting serves from the domain root, but GitHub Pages serves
+// project sites under /<repo-name>/ — so the base path has to be set per
+// deploy target, not hardcoded. Defaults to root (correct for both local
+// dev and Firebase Hosting); the GitHub Pages workflow overrides it via
+// VITE_BASE_PATH before building.
+export default defineConfig({
+    base: process.env.VITE_BASE_PATH || '/',
     plugins: [react(), tailwindcss()],
-}))
+})

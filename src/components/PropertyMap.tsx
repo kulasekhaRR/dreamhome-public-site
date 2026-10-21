@@ -7,7 +7,9 @@ interface PropertyMapProps {
     center: [number, number]
     zoom?: number
     onMarkerClick?: (pin: MapPin) => void
+    onMarkerHover?: (pin: MapPin | null) => void
     selectedId?: string | null
+    hoveredId?: string | null
     className?: string
 }
 
@@ -24,7 +26,16 @@ const TILE_ATTRIBUTION =
 // street-level detail.
 const DEFAULT_ZOOM = 11
 
-const PropertyMap = ({ pins, center, zoom = DEFAULT_ZOOM, onMarkerClick, selectedId, className }: PropertyMapProps) => (
+const PropertyMap = ({
+    pins,
+    center,
+    zoom = DEFAULT_ZOOM,
+    onMarkerClick,
+    onMarkerHover,
+    selectedId,
+    hoveredId,
+    className,
+}: PropertyMapProps) => (
     <MapContainer
         center={center}
         zoom={zoom}
@@ -33,7 +44,13 @@ const PropertyMap = ({ pins, center, zoom = DEFAULT_ZOOM, onMarkerClick, selecte
         style={{ minHeight: '400px' }}
     >
         <TileLayer attribution={TILE_ATTRIBUTION} url={TILE_URL} maxZoom={19} />
-        <ClusterLayer pins={pins} onMarkerClick={onMarkerClick} selectedId={selectedId} />
+        <ClusterLayer
+            pins={pins}
+            onMarkerClick={onMarkerClick}
+            onMarkerHover={onMarkerHover}
+            selectedId={selectedId}
+            hoveredId={hoveredId}
+        />
     </MapContainer>
 )
 

@@ -3,11 +3,24 @@ import type { Listing } from '../types/listing'
 import { toTitleCase, formatIndianPrice } from '../utils/format'
 import { assetPath } from '../utils/assetPath'
 
-const ListingCard = ({ listing }: { listing: Listing }) => {
+interface ListingCardProps {
+    listing: Listing
+    isHighlighted?: boolean
+    onMouseEnter?: () => void
+    onMouseLeave?: () => void
+}
+
+const ListingCard = ({ listing, isHighlighted, onMouseEnter, onMouseLeave }: ListingCardProps) => {
     return (
         <Link
             to={`/listings/${listing.id}`}
-            className='group block rounded-2xl border border-gray-200 bg-white overflow-hidden hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200'
+            onMouseEnter={onMouseEnter}
+            onMouseLeave={onMouseLeave}
+            className={`group block rounded-2xl border bg-white overflow-hidden transition-all duration-200 ${
+                isHighlighted
+                    ? 'border-brand-primary shadow-lg -translate-y-0.5 ring-2 ring-brand-primary/30'
+                    : 'border-gray-200 hover:shadow-lg hover:-translate-y-0.5'
+            }`}
         >
             <div className='relative h-28 bg-gradient-to-br from-brand-accent to-brand-accent-light overflow-hidden'>
                 {listing.location_image && (

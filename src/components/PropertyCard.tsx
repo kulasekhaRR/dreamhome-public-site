@@ -8,13 +8,26 @@ const statusStyles: Record<string, string> = {
     'Under Development': 'bg-amber-50 text-amber-700',
 }
 
-const PropertyCard = ({ property }: { property: Property }) => {
+interface PropertyCardProps {
+    property: Property
+    isHighlighted?: boolean
+    onMouseEnter?: () => void
+    onMouseLeave?: () => void
+}
+
+const PropertyCard = ({ property, isHighlighted, onMouseEnter, onMouseLeave }: PropertyCardProps) => {
     const statusClass = statusStyles[property.status] || 'bg-gray-100 text-gray-700'
 
     return (
         <Link
             to={`/properties/${property.rera_id.toLowerCase()}`}
-            className='group block rounded-2xl border border-gray-200 bg-white overflow-hidden hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200'
+            onMouseEnter={onMouseEnter}
+            onMouseLeave={onMouseLeave}
+            className={`group block rounded-2xl border bg-white overflow-hidden transition-all duration-200 ${
+                isHighlighted
+                    ? 'border-brand-primary shadow-lg -translate-y-0.5 ring-2 ring-brand-primary/30'
+                    : 'border-gray-200 hover:shadow-lg hover:-translate-y-0.5'
+            }`}
         >
             <div className='relative h-28 bg-gradient-to-br from-brand-primary to-brand-primary-dark overflow-hidden'>
                 {property.mandal_image && (

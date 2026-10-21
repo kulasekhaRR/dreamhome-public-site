@@ -1,0 +1,12 @@
+{
+  "projects": {
+    "default": "dreamhomes-9bfa3"
+  },
+  "targets": {
+    "dreamhomes-9bfa3": {
+      "hosting": {
+        "dreamhouse": ["dreamhouse-vizag"]
+      }
+    }
+  }
+}

@@ -25,6 +25,8 @@ jobs:
                   cache: npm
             - run: npm ci
             - run: npm run build
+              env:
+                  VITE_BASE_PATH: /dreamhome-public-site/
             # GitHub Pages has no server-side routing — without this, refreshing
             # or deep-linking to e.g. /properties 404s. Serving index.html for
             # any unmatched path lets React Router take over client-side.

@@ -192,7 +192,10 @@ def main():
                 "possession": possession,
                 "is_ready_to_move": possession.lower() == "given",
                 "location": location,
-                "is_exclusive": row.get("Exclusive", "").strip() == "1",
+                # Every listing in this sheet is an exclusive DreamHome
+                # listing, regardless of what the sheet's own Exclusive
+                # column says per row (confirmed with the data owner).
+                "is_exclusive": True,
                 "description": row.get("Desc", "").strip(),
                 "lat": coords["lat"],
                 "lon": coords["lon"],
