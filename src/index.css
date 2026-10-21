@@ -49,12 +49,3 @@ body {
     border: 3px solid rgba(255, 199, 44, 0.7);
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
 }
-
-.dh-marker-icon {
-    background: var(--color-brand-primary);
-    width: 16px;
-    height: 16px;
-    border-radius: 9999px;
-    border: 2px solid #fff;
-    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
-}

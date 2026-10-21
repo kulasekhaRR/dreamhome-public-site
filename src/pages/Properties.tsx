@@ -44,6 +44,8 @@ const Properties = () => {
     const [selectedMandals, setSelectedMandals] = useState<string[]>([])
     const [reraPage, setReraPage] = useState(1)
 
+    // Clicking a map pin isolates that one listing/project in the panel —
+    // it doesn't just pop up a floating card.
     const [selectedPin, setSelectedPin] = useState<MapPin | null>(null)
     const [hoveredId, setHoveredId] = useState<string | null>(null)
 
@@ -181,6 +183,25 @@ const Properties = () => {
         return pins
     }, [filteredListings, filteredRera, showReraSection])
 
+    // Clicking a map pin isolates that single item in its panel section
+    // rather than just popping up a floating card.
+    const isolatedListing =
+        selectedPin?.kind === 'listing'
+            ? (listingsData?.listings.find((l) => listingToPin(l).id === selectedPin.id) ?? null)
+            : null
+    const isolatedProperty =
+        selectedPin?.kind === 'rera'
+            ? (reraData?.projects.find((p) => propertyToPin(p).id === selectedPin.id) ?? null)
+            : null
+
+    const listingsToShow = isolatedListing ? [isolatedListing] : filteredListings
+    const reraToShow = isolatedProperty ? [isolatedProperty] : pagedRera
+
+    const handlePinClick = (pin: MapPin) => {
+        setSelectedPin(pin)
+        if (pin.kind === 'rera') setShowReraSection(true)
+    }
+
     return (
         <div className='flex flex-col lg:flex-row h-[calc(100vh-4rem)]'>
             {/* Map */}
@@ -189,29 +210,11 @@ const Properties = () => {
                     pins={mapPins}
                     center={SEETHAMMADHARA_CENTER}
                     zoom={11}
-                    onMarkerClick={setSelectedPin}
+                    onMarkerClick={handlePinClick}
                     onMarkerHover={(pin) => setHoveredId(pin?.id ?? null)}
                     selectedId={selectedPin?.id}
                     hoveredId={hoveredId}
                 />
-
-                {selectedPin && (
-                    <div className='absolute bottom-4 left-4 right-4 sm:right-auto sm:w-80 bg-white rounded-xl shadow-lg border border-gray-200 p-4 z-[1000]'>
-                        <div className='flex items-start justify-between gap-2'>
-                            <h3 className='font-semibold text-gray-900 text-sm'>{selectedPin.title}</h3>
-                            <button onClick={() => setSelectedPin(null)} className='text-gray-400 hover:text-gray-600'>
-                                ✕
-                            </button>
-                        </div>
-                        <p className='text-xs text-gray-500 mt-1'>{selectedPin.subtitle}</p>
-                        <a
-                            href={selectedPin.linkTo}
-                            className='inline-block mt-3 text-xs font-semibold text-brand-primary hover:underline'
-                        >
-                            View details →
-                        </a>
-                    </div>
-                )}
             </div>
 
             {/* Listings */}
@@ -251,7 +254,16 @@ const Properties = () => {
                 <div className='p-4'>
                     <div className='flex items-baseline justify-between mb-4'>
                         <h1 className='font-display text-2xl text-gray-900'>Exclusive Listings</h1>
-                        <span className='text-xs text-gray-500'>{filteredListings.length} available</span>
+                        {isolatedListing ? (
+                            <button
+                                onClick={() => setSelectedPin(null)}
+                                className='text-xs font-semibold text-brand-primary hover:underline'
+                            >
+                                ← Show all {filteredListings.length}
+                            </button>
+                        ) : (
+                            <span className='text-xs text-gray-500'>{filteredListings.length} available</span>
+                        )}
                     </div>
 
                     {isLoading && (
@@ -264,50 +276,63 @@ const Properties = () => {
 
                     {!isLoading && (
                         <div className='grid grid-cols-1 sm:grid-cols-2 gap-4 mb-10'>
-                            {filteredListings.map((listing) => {
+                            {listingsToShow.map((listing) => {
                                 const pinId = listingToPin(listing).id
                                 return (
                                     <ListingCard
                                         key={listing.id}
                                         listing={listing}
-                                        isHighlighted={hoveredId === pinId}
+                                        isHighlighted={hoveredId === pinId || selectedPin?.id === pinId}
                                         onMouseEnter={() => setHoveredId(pinId)}
                                         onMouseLeave={() => setHoveredId(null)}
                                     />
                                 )
                             })}
-                            {filteredListings.length === 0 && (
+                            {listingsToShow.length === 0 && (
                                 <p className='text-sm text-gray-400 col-span-2'>No exclusive listings match your filters.</p>
                             )}
                         </div>
                     )}
 
-                    <button
-                        onClick={() => setShowReraSection((v) => !v)}
-                        className='w-full flex items-center justify-between rounded-xl border border-gray-200 px-4 py-3 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors'
-                    >
-                        <span>
-                            {showReraSection ? 'Hide' : 'Show'} RERA-registered projects ({filteredRera.length.toLocaleString()})
-                        </span>
-                        <span className={`transition-transform ${showReraSection ? 'rotate-180' : ''}`}>▾</span>
-                    </button>
+                    {!isolatedListing && (
+                        <button
+                            onClick={() => setShowReraSection((v) => !v)}
+                            className='w-full flex items-center justify-between rounded-xl border border-gray-200 px-4 py-3 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors'
+                        >
+                            <span>
+                                {showReraSection ? 'Hide' : 'Show'} RERA-registered projects ({filteredRera.length.toLocaleString()})
+                            </span>
+                            <span className={`transition-transform ${showReraSection ? 'rotate-180' : ''}`}>▾</span>
+                        </button>
+                    )}
 
-                    {showReraSection && (
+                    {showReraSection && !isolatedListing && (
                         <div className='mt-4'>
-                            <div className='flex flex-wrap items-center gap-2 mb-4'>
-                                <SimpleMultiSelect label='Type' options={typeOptions} selected={selectedTypes} onChange={setSelectedTypes} />
-                                <SimpleMultiSelect label='Status' options={statusOptions} selected={selectedStatuses} onChange={setSelectedStatuses} />
-                                <SimpleMultiSelect label='Locality' options={mandalOptions} selected={selectedMandals} onChange={setSelectedMandals} />
-                            </div>
+                            {!isolatedProperty && (
+                                <div className='flex flex-wrap items-center gap-2 mb-4'>
+                                    <SimpleMultiSelect label='Type' options={typeOptions} selected={selectedTypes} onChange={setSelectedTypes} />
+                                    <SimpleMultiSelect label='Status' options={statusOptions} selected={selectedStatuses} onChange={setSelectedStatuses} />
+                                    <SimpleMultiSelect label='Locality' options={mandalOptions} selected={selectedMandals} onChange={setSelectedMandals} />
+                                </div>
+                            )}
+
+                            {isolatedProperty && (
+                                <button
+                                    onClick={() => setSelectedPin(null)}
+                                    className='mb-3 text-xs font-semibold text-brand-primary hover:underline'
+                                >
+                                    ← Show all {filteredRera.length.toLocaleString()} RERA projects
+                                </button>
+                            )}
 
                             <div className='grid grid-cols-1 sm:grid-cols-2 gap-4'>
-                                {pagedRera.map((property) => {
+                                {reraToShow.map((property) => {
                                     const pinId = propertyToPin(property).id
                                     return (
                                         <PropertyCard
                                             key={property.rera_id}
                                             property={property}
-                                            isHighlighted={hoveredId === pinId}
+                                            isHighlighted={hoveredId === pinId || selectedPin?.id === pinId}
                                             onMouseEnter={() => setHoveredId(pinId)}
                                             onMouseLeave={() => setHoveredId(null)}
                                         />
@@ -315,7 +340,7 @@ const Properties = () => {
                                 })}
                             </div>
 
-                            {reraTotalPages > 1 && (
+                            {!isolatedProperty && reraTotalPages > 1 && (
                                 <div className='flex items-center justify-center gap-2 mt-6'>
                                     <button
                                         disabled={reraPage === 1}
