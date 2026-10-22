@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom'
 import type { Listing } from '../types/listing'
 import { toTitleCase, formatIndianPrice } from '../utils/format'
 import { assetPath } from '../utils/assetPath'
+import { parseListingPossession, isPast } from '../utils/completion'
 
 interface ListingCardProps {
     listing: Listing
@@ -11,6 +12,8 @@ interface ListingCardProps {
 }
 
 const ListingCard = ({ listing, isHighlighted, onMouseEnter, onMouseLeave }: ListingCardProps) => {
+    const effectivelyReady = listing.is_ready_to_move || isPast(parseListingPossession(listing.possession))
+
     return (
         <Link
             to={`/listings/${listing.id}`}
@@ -55,7 +58,7 @@ const ListingCard = ({ listing, isHighlighted, onMouseEnter, onMouseLeave }: Lis
                 </div>
 
                 <div className='mt-2 flex items-center justify-between text-xs text-gray-500'>
-                    <span>{listing.is_ready_to_move ? 'Ready to move' : listing.possession}</span>
+                    <span>{effectivelyReady ? 'Ready to move' : listing.possession}</span>
                     {listing.price_per_sqft && <span>₹{listing.price_per_sqft.toLocaleString()}/sqft</span>}
                 </div>
             </div>

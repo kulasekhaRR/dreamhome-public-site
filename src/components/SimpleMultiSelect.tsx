@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useDropdown } from '../hooks/useDropdown'
 
 interface Option {
     label: string
@@ -13,25 +13,16 @@ interface SimpleMultiSelectProps {
 }
 
 const SimpleMultiSelect = ({ label, options, selected, onChange }: SimpleMultiSelectProps) => {
-    const [open, setOpen] = useState(false)
-    const ref = useRef<HTMLDivElement>(null)
+    const { open, align, ref, toggle } = useDropdown<HTMLDivElement>()
 
-    useEffect(() => {
-        const handleClick = (e: MouseEvent) => {
-            if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false)
-        }
-        document.addEventListener('mousedown', handleClick)
-        return () => document.removeEventListener('mousedown', handleClick)
-    }, [])
-
-    const toggle = (value: string) => {
+    const toggleValue = (value: string) => {
         onChange(selected.includes(value) ? selected.filter((v) => v !== value) : [...selected, value])
     }
 
     return (
         <div className='relative' ref={ref}>
             <button
-                onClick={() => setOpen((v) => !v)}
+                onClick={toggle}
                 className={`h-10 px-4 rounded-full border text-sm font-medium flex items-center gap-2 transition-colors ${
                     selected.length > 0
                         ? 'border-brand-primary bg-brand-primary/5 text-brand-primary'
@@ -47,7 +38,11 @@ const SimpleMultiSelect = ({ label, options, selected, onChange }: SimpleMultiSe
             </button>
 
             {open && (
-                <div className='absolute z-30 mt-2 w-60 max-h-72 overflow-y-auto bg-white border border-gray-200 rounded-xl shadow-lg py-2'>
+                <div
+                    className={`absolute z-30 mt-2 w-60 max-h-72 overflow-y-auto bg-white border border-gray-200 rounded-xl shadow-lg py-2 ${
+                        align === 'right' ? 'right-0' : 'left-0'
+                    }`}
+                >
                     {options.length === 0 && <div className='px-4 py-2 text-sm text-gray-400'>No options</div>}
                     {options.map((option) => (
                         <label
@@ -57,7 +52,7 @@ const SimpleMultiSelect = ({ label, options, selected, onChange }: SimpleMultiSe
                             <input
                                 type='checkbox'
                                 checked={selected.includes(option.value)}
-                                onChange={() => toggle(option.value)}
+                                onChange={() => toggleValue(option.value)}
                                 className='rounded border-gray-300 text-brand-primary focus:ring-brand-primary'
                             />
                             {option.label}

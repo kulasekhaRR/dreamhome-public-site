@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useDropdown } from '../hooks/useDropdown'
 
 interface RangeFilterProps {
     label: string
@@ -10,22 +10,13 @@ interface RangeFilterProps {
 }
 
 const RangeFilter = ({ label, min, max, onChange, unit = '', step = 1 }: RangeFilterProps) => {
-    const [open, setOpen] = useState(false)
-    const ref = useRef<HTMLDivElement>(null)
+    const { open, align, ref, toggle } = useDropdown<HTMLDivElement>()
     const active = min !== '' || max !== ''
-
-    useEffect(() => {
-        const handleClick = (e: MouseEvent) => {
-            if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false)
-        }
-        document.addEventListener('mousedown', handleClick)
-        return () => document.removeEventListener('mousedown', handleClick)
-    }, [])
 
     return (
         <div className='relative' ref={ref}>
             <button
-                onClick={() => setOpen((v) => !v)}
+                onClick={toggle}
                 className={`h-10 px-4 rounded-full border text-sm font-medium transition-colors ${
                     active ? 'border-brand-primary bg-brand-primary/5 text-brand-primary' : 'border-gray-300 text-gray-700 hover:border-gray-400'
                 }`}
@@ -35,7 +26,11 @@ const RangeFilter = ({ label, min, max, onChange, unit = '', step = 1 }: RangeFi
             </button>
 
             {open && (
-                <div className='absolute z-30 mt-2 w-60 bg-white border border-gray-200 rounded-xl shadow-lg p-4'>
+                <div
+                    className={`absolute z-30 mt-2 w-60 max-w-[calc(100vw-2rem)] bg-white border border-gray-200 rounded-xl shadow-lg p-4 ${
+                        align === 'right' ? 'right-0' : 'left-0'
+                    }`}
+                >
                     <div className='flex items-center gap-2'>
                         <input
                             type='number'
@@ -56,10 +51,7 @@ const RangeFilter = ({ label, min, max, onChange, unit = '', step = 1 }: RangeFi
                         />
                     </div>
                     {active && (
-                        <button
-                            onClick={() => onChange('', '')}
-                            className='mt-3 text-xs text-red-600 hover:underline'
-                        >
+                        <button onClick={() => onChange('', '')} className='mt-3 text-xs text-red-600 hover:underline'>
                             Clear
                         </button>
                     )}

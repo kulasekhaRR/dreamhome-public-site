@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { fetchProperties } from '../services/propertiesService'
 import { fetchListings } from '../services/listingsService'
@@ -11,43 +11,100 @@ import ListingCard from '../components/ListingCard'
 import PropertyMap from '../components/PropertyMap'
 import SimpleMultiSelect from '../components/SimpleMultiSelect'
 import RangeFilter from '../components/RangeFilter'
+import FilterChatbot from '../components/FilterChatbot'
 import { toTitleCase } from '../utils/format'
+import type { ParsedChatFilters } from '../utils/chatFilterParser'
 
 const RERA_PAGE_SIZE = 24
 const SEETHAMMADHARA_CENTER: [number, number] = [17.745, 83.3062]
 
 type NumOrEmpty = number | ''
 
+// Comma-joined list <-> URL param helpers, and the param keys everything
+// below is persisted under. Filters live in the URL (not just component
+// state) specifically so that navigating to a listing/property and back
+// restores them — plain useState resets on remount, which is exactly the
+// "filters clear when I go back" bug.
+const listParam = (params: URLSearchParams, key: string): string[] => {
+    const raw = params.get(key)
+    return raw ? raw.split(',').filter(Boolean) : []
+}
+const numParam = (params: URLSearchParams, key: string): NumOrEmpty => {
+    const raw = params.get(key)
+    if (!raw) return ''
+    const n = Number(raw)
+    return Number.isFinite(n) ? n : ''
+}
+
 const Properties = () => {
-    const [searchParams] = useSearchParams()
+    const [searchParams, setSearchParams] = useSearchParams()
 
     const [listingsData, setListingsData] = useState<ListingsDataset | null>(null)
     const [reraData, setReraData] = useState<PropertiesDataset | null>(null)
     const [isLoading, setIsLoading] = useState(true)
 
     const [query, setQuery] = useState(searchParams.get('q') || '')
-    const [showReraSection, setShowReraSection] = useState(false)
+    const [showReraSection, setShowReraSection] = useState(searchParams.get('rera') === '1')
+    const [showMapMobile, setShowMapMobile] = useState(true)
 
     // Listings filters (every field the sheet actually gives us)
-    const [selectedBhk, setSelectedBhk] = useState<string[]>([])
-    const [selectedFacing, setSelectedFacing] = useState<string[]>([])
-    const [selectedLocations, setSelectedLocations] = useState<string[]>([])
-    const [readyToMoveOnly, setReadyToMoveOnly] = useState(false)
-    const [priceMin, setPriceMin] = useState<NumOrEmpty>('')
-    const [priceMax, setPriceMax] = useState<NumOrEmpty>('')
-    const [areaMin, setAreaMin] = useState<NumOrEmpty>('')
-    const [areaMax, setAreaMax] = useState<NumOrEmpty>('')
+    const [selectedBhk, setSelectedBhk] = useState<string[]>(() => listParam(searchParams, 'bhk'))
+    const [selectedFacing, setSelectedFacing] = useState<string[]>(() => listParam(searchParams, 'facing'))
+    const [selectedLocations, setSelectedLocations] = useState<string[]>(() => listParam(searchParams, 'loc'))
+    const [readyToMoveOnly, setReadyToMoveOnly] = useState(searchParams.get('ready') === '1')
+    const [priceMin, setPriceMin] = useState<NumOrEmpty>(() => numParam(searchParams, 'pmin'))
+    const [priceMax, setPriceMax] = useState<NumOrEmpty>(() => numParam(searchParams, 'pmax'))
+    const [areaMin, setAreaMin] = useState<NumOrEmpty>(() => numParam(searchParams, 'amin'))
+    const [areaMax, setAreaMax] = useState<NumOrEmpty>(() => numParam(searchParams, 'amax'))
 
     // RERA directory filters
-    const [selectedTypes, setSelectedTypes] = useState<string[]>([])
-    const [selectedStatuses, setSelectedStatuses] = useState<string[]>([])
-    const [selectedMandals, setSelectedMandals] = useState<string[]>([])
-    const [reraPage, setReraPage] = useState(1)
+    const [selectedTypes, setSelectedTypes] = useState<string[]>(() => listParam(searchParams, 'type'))
+    const [selectedStatuses, setSelectedStatuses] = useState<string[]>(() => listParam(searchParams, 'status'))
+    const [selectedMandals, setSelectedMandals] = useState<string[]>(() => listParam(searchParams, 'mandal'))
+    const [reraPage, setReraPage] = useState(() => Number(searchParams.get('page')) || 1)
 
     // Clicking a map pin isolates that one listing/project in the panel —
-    // it doesn't just pop up a floating card.
+    // it doesn't just pop up a floating card. Not persisted to the URL:
+    // it's a transient map interaction, not a filter.
     const [selectedPin, setSelectedPin] = useState<MapPin | null>(null)
     const [hoveredId, setHoveredId] = useState<string | null>(null)
+
+    // Keep the URL in sync with every filter so the back button (or our own
+    // card links) restores exactly this state instead of a blank slate.
+    useEffect(() => {
+        const params = new URLSearchParams()
+        if (query) params.set('q', query)
+        if (selectedBhk.length) params.set('bhk', selectedBhk.join(','))
+        if (selectedFacing.length) params.set('facing', selectedFacing.join(','))
+        if (selectedLocations.length) params.set('loc', selectedLocations.join(','))
+        if (readyToMoveOnly) params.set('ready', '1')
+        if (priceMin !== '') params.set('pmin', String(priceMin))
+        if (priceMax !== '') params.set('pmax', String(priceMax))
+        if (areaMin !== '') params.set('amin', String(areaMin))
+        if (areaMax !== '') params.set('amax', String(areaMax))
+        if (showReraSection) params.set('rera', '1')
+        if (selectedTypes.length) params.set('type', selectedTypes.join(','))
+        if (selectedStatuses.length) params.set('status', selectedStatuses.join(','))
+        if (selectedMandals.length) params.set('mandal', selectedMandals.join(','))
+        if (reraPage > 1) params.set('page', String(reraPage))
+        setSearchParams(params, { replace: true })
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [
+        query,
+        selectedBhk,
+        selectedFacing,
+        selectedLocations,
+        readyToMoveOnly,
+        priceMin,
+        priceMax,
+        areaMin,
+        areaMax,
+        showReraSection,
+        selectedTypes,
+        selectedStatuses,
+        selectedMandals,
+        reraPage,
+    ])
 
     useEffect(() => {
         Promise.all([fetchListings(), fetchProperties()])
@@ -167,7 +224,15 @@ const Properties = () => {
         })
     }, [reraData, query, selectedTypes, selectedStatuses, selectedMandals])
 
+    // Resets to page 1 on filter changes, but not on the initial mount —
+    // otherwise a page number restored from the URL (after navigating back
+    // from a property) would immediately get stomped back to 1.
+    const isFirstRender = useRef(true)
     useEffect(() => {
+        if (isFirstRender.current) {
+            isFirstRender.current = false
+            return
+        }
         setReraPage(1)
     }, [query, selectedTypes, selectedStatuses, selectedMandals])
 
@@ -202,10 +267,22 @@ const Properties = () => {
         if (pin.kind === 'rera') setShowReraSection(true)
     }
 
+    const handleChatApply = (filters: ParsedChatFilters) => {
+        if (filters.bhk) setSelectedBhk([filters.bhk])
+        if (filters.facing) setSelectedFacing([filters.facing])
+        if (filters.location) setSelectedLocations([filters.location])
+        if (filters.readyToMove) setReadyToMoveOnly(true)
+        if (filters.priceMinLakhs !== undefined) setPriceMin(filters.priceMinLakhs)
+        if (filters.priceMaxLakhs !== undefined) setPriceMax(filters.priceMaxLakhs)
+        setSelectedPin(null)
+    }
+
     return (
         <div className='flex flex-col lg:flex-row h-[calc(100vh-4rem)]'>
             {/* Map */}
-            <div className='relative h-80 lg:h-full lg:w-1/2 xl:w-3/5 order-1 lg:order-none'>
+            <div
+                className={`relative lg:h-full lg:w-1/2 xl:w-3/5 order-1 lg:order-none ${showMapMobile ? 'h-80 lg:h-full' : 'h-0 lg:h-full'} transition-[height] duration-200 overflow-hidden`}
+            >
                 <PropertyMap
                     pins={mapPins}
                     center={SEETHAMMADHARA_CENTER}
@@ -217,8 +294,18 @@ const Properties = () => {
                 />
             </div>
 
+            {/* Mobile-only map visibility toggle — the map defaults to
+                visible, but on small screens it's worth being able to
+                reclaim the vertical space for listings. */}
+            <button
+                onClick={() => setShowMapMobile((v) => !v)}
+                className='lg:hidden order-2 flex items-center justify-center gap-2 h-10 border-b border-gray-200 text-sm font-medium text-brand-primary bg-white'
+            >
+                {showMapMobile ? '▲ Hide map' : '▼ Show map'}
+            </button>
+
             {/* Listings */}
-            <div className='flex-1 lg:w-1/2 xl:w-2/5 overflow-y-auto'>
+            <div className='order-3 lg:order-none flex-1 lg:w-1/2 xl:w-2/5 overflow-y-auto'>
                 <div className='p-4 border-b border-gray-200 sticky top-0 bg-white z-10 space-y-3'>
                     <input
                         value={query}
@@ -365,6 +452,8 @@ const Properties = () => {
                     )}
                 </div>
             </div>
+
+            <FilterChatbot locationOptions={locationOptions.map((o) => o.value)} onApply={handleChatApply} resultCount={filteredListings.length} />
         </div>
     )
 }

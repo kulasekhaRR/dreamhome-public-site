@@ -5,8 +5,12 @@ export interface Listing {
     area_sqft: number | null
     bhk: string
     price_per_sqft: number | null
+    // Includes the amenities charge (see amenities_value_lakhs) on top of
+    // area * price_per_sqft.
     total_price_estimate: number | null
-    amenities_count: number | null
+    // An additional amenities charge, in lakhs of rupees — not a count of
+    // amenities features.
+    amenities_value_lakhs: number | null
     possession: string
     is_ready_to_move: boolean
     location: string

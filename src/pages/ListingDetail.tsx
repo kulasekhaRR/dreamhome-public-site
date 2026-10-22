@@ -6,10 +6,12 @@ import PropertyMap from '../components/PropertyMap'
 import { toTitleCase, formatIndianPrice } from '../utils/format'
 import { assetPath } from '../utils/assetPath'
 import { listingToPin } from '../utils/mapPins'
+import { parseListingPossession, isPast } from '../utils/completion'
 
 const ListingDetail = () => {
     const { id } = useParams<{ id: string }>()
     const [listing, setListing] = useState<Listing | null | undefined>(undefined)
+    const [showMap, setShowMap] = useState(true)
 
     useEffect(() => {
         fetchListings()
@@ -34,6 +36,11 @@ const ListingDetail = () => {
             </div>
         )
     }
+
+    // The sheet's promised possession month can pass without the row ever
+    // being updated to "Given" — if that date is behind us, it should read
+    // as ready to move rather than a now-meaningless future-sounding date.
+    const effectivelyReady = listing.is_ready_to_move || isPast(parseListingPossession(listing.possession))
 
     return (
         <div className='mx-auto max-w-5xl px-4 sm:px-6 lg:px-8 py-12'>
@@ -68,10 +75,10 @@ const ListingDetail = () => {
                     )}
                     <span
                         className={`text-sm font-medium px-3 py-1.5 rounded-full ${
-                            listing.is_ready_to_move ? 'bg-brand-emerald-light text-brand-emerald' : 'bg-brand-accent-light text-brand-primary'
+                            effectivelyReady ? 'bg-brand-emerald-light text-brand-emerald' : 'bg-brand-accent-light text-brand-primary'
                         }`}
                     >
-                        {listing.is_ready_to_move ? 'Ready to move' : `Possession: ${listing.possession}`}
+                        {effectivelyReady ? 'Ready to move' : `Possession: ${listing.possession}`}
                     </span>
                 </div>
             </div>
@@ -83,9 +90,16 @@ const ListingDetail = () => {
                         {formatIndianPrice(listing.total_price_estimate)}
                     </div>
                 </div>
-                {listing.price_per_sqft && (
-                    <div className='text-sm text-gray-600'>₹{listing.price_per_sqft.toLocaleString()} / sqft</div>
-                )}
+                <div className='text-right'>
+                    {listing.price_per_sqft && (
+                        <div className='text-sm text-gray-600'>₹{listing.price_per_sqft.toLocaleString()} / sqft</div>
+                    )}
+                    {listing.amenities_value_lakhs ? (
+                        <div className='text-xs text-gray-400 mt-0.5'>
+                            Includes ₹{listing.amenities_value_lakhs} L amenities charge
+                        </div>
+                    ) : null}
+                </div>
             </div>
 
             <div className='mt-8 grid grid-cols-2 sm:grid-cols-4 gap-4'>
@@ -93,7 +107,10 @@ const ListingDetail = () => {
                     ['BHK', listing.bhk],
                     ['Area', listing.area_sqft ? `${listing.area_sqft.toLocaleString()} sqft` : '—'],
                     ['Facing', listing.facing || '—'],
-                    ['Amenities', listing.amenities_count != null ? `${listing.amenities_count}` : '—'],
+                    [
+                        'Amenities Charge',
+                        listing.amenities_value_lakhs ? `₹${listing.amenities_value_lakhs} L` : 'Included',
+                    ],
                 ].map(([label, value]) => (
                     <div key={label} className='rounded-xl border border-gray-200 p-4'>
                         <div className='text-xs text-gray-500'>{label}</div>
@@ -110,15 +127,27 @@ const ListingDetail = () => {
             )}
 
             <div className='mt-10'>
-                <h2 className='font-display text-xl text-gray-900 mb-4'>Location</h2>
-                <div className='rounded-2xl overflow-hidden border border-gray-200 h-96'>
-                    <PropertyMap pins={[listingToPin(listing)]} center={[listing.lat, listing.lon]} zoom={12} />
+                <div className='flex items-center justify-between mb-4'>
+                    <h2 className='font-display text-xl text-gray-900'>Location</h2>
+                    <button
+                        onClick={() => setShowMap((v) => !v)}
+                        className='text-sm font-medium text-brand-primary hover:underline'
+                    >
+                        {showMap ? 'Hide map' : 'Show map'}
+                    </button>
                 </div>
-                {listing.geocode_source === 'vizag_fallback' && (
-                    <p className='text-xs text-gray-400 mt-2'>
-                        Exact locality coordinates weren't available for this listing — map is centred on
-                        Visakhapatnam city.
-                    </p>
+                {showMap && (
+                    <>
+                        <div className='rounded-2xl overflow-hidden border border-gray-200 h-96'>
+                            <PropertyMap pins={[listingToPin(listing)]} center={[listing.lat, listing.lon]} zoom={12} />
+                        </div>
+                        {listing.geocode_source === 'vizag_fallback' && (
+                            <p className='text-xs text-gray-400 mt-2'>
+                                Exact locality coordinates weren't available for this listing — map is centred on
+                                Visakhapatnam city.
+                            </p>
+                        )}
+                    </>
                 )}
             </div>
 

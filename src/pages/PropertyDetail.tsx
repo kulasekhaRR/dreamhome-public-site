@@ -6,10 +6,12 @@ import PropertyMap from '../components/PropertyMap'
 import { toTitleCase } from '../utils/format'
 import { assetPath } from '../utils/assetPath'
 import { propertyToPin } from '../utils/mapPins'
+import { parseReraDate, isPast } from '../utils/completion'
 
 const PropertyDetail = () => {
     const { id } = useParams<{ id: string }>()
     const [property, setProperty] = useState<Property | null | undefined>(undefined)
+    const [showMap, setShowMap] = useState(true)
 
     useEffect(() => {
         fetchProperties()
@@ -34,6 +36,8 @@ const PropertyDetail = () => {
             </div>
         )
     }
+
+    const displayStatus = isPast(parseReraDate(property.expected_completion)) ? 'Completed' : property.status
 
     return (
         <div className='mx-auto max-w-5xl px-4 sm:px-6 lg:px-8 py-12'>
@@ -62,10 +66,14 @@ const PropertyDetail = () => {
                 </div>
                 <span
                     className={`text-sm font-medium px-3 py-1.5 rounded-full ${
-                        property.status === 'Under Development' ? 'bg-brand-accent-light text-brand-primary' : 'bg-brand-emerald-light text-brand-emerald'
+                        displayStatus === 'Completed'
+                            ? 'bg-gray-100 text-gray-600'
+                            : displayStatus === 'Under Development'
+                              ? 'bg-brand-accent-light text-brand-primary'
+                              : 'bg-brand-emerald-light text-brand-emerald'
                     }`}
                 >
-                    {property.status}
+                    {displayStatus}
                 </span>
             </div>
 
@@ -84,17 +92,29 @@ const PropertyDetail = () => {
             </div>
 
             <div className='mt-10'>
-                <h2 className='font-display text-xl text-gray-900 mb-4'>Location</h2>
-                <div className='rounded-2xl overflow-hidden border border-gray-200 h-96'>
-                    <PropertyMap
-                        pins={[propertyToPin(property)]}
-                        center={[property.mandal_lat, property.mandal_lon]}
-                        zoom={12}
-                    />
+                <div className='flex items-center justify-between mb-4'>
+                    <h2 className='font-display text-xl text-gray-900'>Location</h2>
+                    <button
+                        onClick={() => setShowMap((v) => !v)}
+                        className='text-sm font-medium text-brand-primary hover:underline'
+                    >
+                        {showMap ? 'Hide map' : 'Show map'}
+                    </button>
                 </div>
-                <p className='text-xs text-gray-400 mt-2'>
-                    Location shown is approximate (mandal-level), not the exact plot boundary.
-                </p>
+                {showMap && (
+                    <>
+                        <div className='rounded-2xl overflow-hidden border border-gray-200 h-96'>
+                            <PropertyMap
+                                pins={[propertyToPin(property)]}
+                                center={[property.mandal_lat, property.mandal_lon]}
+                                zoom={12}
+                            />
+                        </div>
+                        <p className='text-xs text-gray-400 mt-2'>
+                            Location shown is approximate (mandal-level), not the exact plot boundary.
+                        </p>
+                    </>
+                )}
             </div>
 
             <div className='mt-10 rounded-2xl bg-brand-cream p-6'>

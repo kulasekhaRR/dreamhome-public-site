@@ -2,10 +2,12 @@ import { Link } from 'react-router-dom'
 import type { Property } from '../types/property'
 import { toTitleCase } from '../utils/format'
 import { assetPath } from '../utils/assetPath'
+import { parseReraDate, isPast } from '../utils/completion'
 
 const statusStyles: Record<string, string> = {
     'New Project': 'bg-brand-emerald-light text-brand-emerald',
     'Under Development': 'bg-brand-accent-light text-brand-primary',
+    Completed: 'bg-gray-100 text-gray-600',
 }
 
 interface PropertyCardProps {
@@ -16,7 +18,12 @@ interface PropertyCardProps {
 }
 
 const PropertyCard = ({ property, isHighlighted, onMouseEnter, onMouseLeave }: PropertyCardProps) => {
-    const statusClass = statusStyles[property.status] || 'bg-gray-100 text-gray-700'
+    // The bulk RERA directory only ever has "New Project" / "Under
+    // Development" as a stored status, even once the promised completion
+    // date has clearly passed — a past-dated project reads oddly as still
+    // "Under Development", so derive a more honest label for display.
+    const displayStatus = isPast(parseReraDate(property.expected_completion)) ? 'Completed' : property.status
+    const statusClass = statusStyles[displayStatus] || 'bg-gray-100 text-gray-700'
 
     return (
         <Link
@@ -49,14 +56,14 @@ const PropertyCard = ({ property, isHighlighted, onMouseEnter, onMouseLeave }: P
                         {toTitleCase(property.project_name)}
                     </h3>
                     <span className={`shrink-0 text-xs font-medium px-2 py-1 rounded-full ${statusClass}`}>
-                        {property.status}
+                        {displayStatus}
                     </span>
                 </div>
                 <p className='mt-2 text-sm text-gray-500 line-clamp-1'>{property.place}</p>
-                <div className='mt-3 flex items-center justify-between text-xs text-gray-500'>
-                    <span>~{property.distance_km_from_target_mandal_level} km away</span>
-                    <span>RERA: {property.rera_id}</span>
-                </div>
+                {/* RERA ID moved to the detail page only — it's a trust/
+                    verification detail nobody actually checks at a glance
+                    on the card. */}
+                <div className='mt-3 text-xs text-gray-500'>~{property.distance_km_from_target_mandal_level} km away</div>
             </div>
         </Link>
     )

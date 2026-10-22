@@ -176,6 +176,12 @@ def main():
         area_sqft = parse_int(row.get("Area", ""))
         price_per_sqft = parse_int(row.get("Price_per_sft", ""))
         possession = row.get("Possession", "").strip()
+        # The sheet's "Amenities(L)" column is an amenities charge in lakhs
+        # of rupees, not a count of amenities - it's additional cost on top
+        # of area * price_per_sqft, so it belongs in the estimated total.
+        amenities_value_lakhs = parse_float(row.get("Amenities(L)", ""))
+        base_price = area_sqft * price_per_sqft if area_sqft and price_per_sqft else None
+        amenities_charge = round(amenities_value_lakhs * 100000) if amenities_value_lakhs else 0
 
         listings.append(
             {
@@ -185,10 +191,8 @@ def main():
                 "area_sqft": area_sqft,
                 "bhk": row.get("BHK", "").strip(),
                 "price_per_sqft": price_per_sqft,
-                "total_price_estimate": (
-                    area_sqft * price_per_sqft if area_sqft and price_per_sqft else None
-                ),
-                "amenities_count": parse_float(row.get("Amenities(L)", "")),
+                "total_price_estimate": (base_price + amenities_charge) if base_price is not None else None,
+                "amenities_value_lakhs": amenities_value_lakhs,
                 "possession": possession,
                 "is_ready_to_move": possession.lower() == "given",
                 "location": location,
