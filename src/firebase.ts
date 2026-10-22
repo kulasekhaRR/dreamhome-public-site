@@ -1,5 +1,5 @@
 import { initializeApp } from 'firebase/app'
-import { getAuth } from 'firebase/auth'
+import { getAuth, connectAuthEmulator } from 'firebase/auth'
 import { getFirestore } from 'firebase/firestore'
 
 // A Firebase web config is not a secret — it's meant to be embedded in
@@ -25,3 +25,9 @@ const firebaseConfig = {
 export const app = initializeApp(firebaseConfig)
 export const auth = getAuth(app)
 export const db = getFirestore(app)
+
+// Debug-only: point at the local Auth emulator to isolate whether a
+// sign-in bug is in our code or in the live Google/Firebase interaction.
+if (import.meta.env.VITE_USE_AUTH_EMULATOR === '1') {
+    connectAuthEmulator(auth, 'http://localhost:9099', { disableWarnings: true })
+}
