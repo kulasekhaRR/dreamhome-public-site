@@ -5,8 +5,14 @@
   "targets": {
     "dreamhomes-9bfa3": {
       "hosting": {
-        "dreamhouse": ["dreamhouse-vizag"]
+        "dreamhouse": [
+          "dreamhouse-vizag"
+        ],
+        "default": [
+          "dreamhomes-9bfa3"
+        ]
       }
     }
-  }
+  },
+  "etags": {}
 }

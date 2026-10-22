@@ -10,13 +10,14 @@ const firebaseConfig = {
     appId: '1:1086324151008:web:b125b4e1d0741f62027685',
     storageBucket: 'dreamhomes-9bfa3.firebasestorage.app',
     apiKey: 'AIzaSyCMgpIMVd_2aKBx9fTp4D6_E1icSkxvRws',
-    // Deliberately NOT the default *.firebaseapp.com — that domain has no
-    // Hosting content deployed (we only deployed the custom "dreamhouse"
-    // site), so Firebase's own auth-helper endpoints 404 there
-    // (confirmed: /__/firebase/init.json). Pointing authDomain at our own
-    // Hosting site, which does serve those paths, is Firebase's documented
-    // fix for this with a custom Hosting site/domain.
-    authDomain: 'dreamhouse-vizag.web.app',
+    // Back to the default domain (not dreamhouse-vizag.web.app). Pointing
+    // this at the custom site fixed the earlier init.json 404, but broke
+    // Google Sign-In instead (redirect_uri_mismatch) — the Google OAuth
+    // client Firebase auto-creates is only pre-authorized for this default
+    // domain's /__/auth/handler, not a custom Hosting site's. The real fix
+    // was deploying actual content to this default domain too (see the
+    // "default" Hosting target in firebase.json), so it no longer 404s.
+    authDomain: 'dreamhomes-9bfa3.firebaseapp.com',
     messagingSenderId: '1086324151008',
     measurementId: 'G-TPLL7ZXW22',
 }
