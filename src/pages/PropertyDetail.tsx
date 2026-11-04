@@ -38,6 +38,11 @@ const PropertyDetail = () => {
     }
 
     const displayStatus = isPast(parseReraDate(property.expected_completion)) ? 'Completed' : property.status
+    // RERA ID is only meaningful to check for plot/layout ventures — flats
+    // and other built-unit projects aren't what buyers scrutinize the ID
+    // for, per earlier feedback ("rera id required at this moment? Ikkada
+    // evaru chudaru usual ga").
+    const isVenture = /plot/i.test(property.project_type)
 
     return (
         <div className='mx-auto max-w-5xl px-4 sm:px-6 lg:px-8 py-12'>
@@ -79,7 +84,7 @@ const PropertyDetail = () => {
 
             <div className='mt-8 grid grid-cols-2 sm:grid-cols-4 gap-4'>
                 {[
-                    ['RERA ID', property.rera_id],
+                    ...(isVenture ? [['RERA ID', property.rera_id]] : []),
                     ['Project Type', property.project_type],
                     ['Approved', property.approval_date],
                     ['Expected Completion', property.expected_completion],
